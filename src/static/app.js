@@ -164,27 +164,80 @@ document.addEventListener('DOMContentLoaded', () => {
        2. Real-time Logging (SSE Server-Sent Events)
        =================================================== */
     
+    // Connection status tracking
+    let isBackendConnected = false;
+    let disconnectTimeout = null;
+    const connectionDot = document.getElementById('connection-dot');
+
+    function setConnectionStatus(connected) {
+        if (connected) {
+            isBackendConnected = true;
+            if (disconnectTimeout) {
+                clearTimeout(disconnectTimeout);
+                disconnectTimeout = null;
+            }
+            if (connectionDot) {
+                connectionDot.className = 'connection-dot connected';
+                connectionDot.title = '後端服務已連線 🌻';
+            }
+        } else {
+            isBackendConnected = false;
+            // Only alert if we stay disconnected for more than 4 seconds
+            if (!disconnectTimeout) {
+                disconnectTimeout = setTimeout(() => {
+                    if (connectionDot) {
+                        connectionDot.className = 'connection-dot disconnected';
+                        connectionDot.title = '與後端服務中斷連線...';
+                    }
+                    appendTerminalLog("[SYSTEM] 警告：與背景伺服器失去連線！請確認本地執行檔是否已啟動。");
+                }, 4000);
+            }
+        }
+    }
+
     // Connect to Server-Sent Event log stream
-    const eventSource = new EventSource(API_BASE + '/api/stream-logs');
-    
-    eventSource.onmessage = (event) => {
-        const logLineText = event.data;
-        
-        // Check if log contains progress indicators: [PROGRESS] 45
-        if (logLineText.startsWith('[PROGRESS]')) {
-            const percent = parseInt(logLineText.replace('[PROGRESS]', '').trim());
-            updateProgressHUD(percent);
-            return;
+    let eventSource = null;
+
+    function connectSSE() {
+        if (eventSource) {
+            eventSource.close();
         }
 
-        // Print to log screen
-        appendTerminalLog(logLineText);
-    };
+        eventSource = new EventSource(API_BASE + '/api/stream-logs');
 
-    eventSource.onerror = (err) => {
-        console.error("SSE connection error:", err);
-        appendTerminalLog("[SYSTEM] 與背景日誌服務中斷連線，正在嘗試重新連接...");
-    };
+        eventSource.onopen = () => {
+            setConnectionStatus(true);
+        };
+
+        eventSource.onmessage = (event) => {
+            const logLineText = event.data;
+
+            // Mark connected on receiving messages
+            setConnectionStatus(true);
+
+            // Filter out system connection banner message to avoid spamming the log list
+            if (logLineText.includes('成功連接至向日葵日誌串流服務')) {
+                return;
+            }
+
+            // Check if log contains progress indicators: [PROGRESS] 45
+            if (logLineText.startsWith('[PROGRESS]')) {
+                const percent = parseInt(logLineText.replace('[PROGRESS]', '').trim());
+                updateProgressHUD(percent);
+                return;
+            }
+
+            // Print to log screen
+            appendTerminalLog(logLineText);
+        };
+
+        eventSource.onerror = (err) => {
+            console.error("SSE connection error:", err);
+            setConnectionStatus(false);
+        };
+    }
+
+    connectSSE();
 
     function appendTerminalLog(text) {
         if (!text || text.trim() === '') return;

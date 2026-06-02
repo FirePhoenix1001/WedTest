@@ -13,7 +13,9 @@ def get_tool_path(filename):
     search_paths = [
         BASE_PATH,
         os.path.join(BASE_PATH, "tools"),
-        os.path.join(BASE_PATH, "src")
+        os.path.join(BASE_PATH, "src"),
+        os.getcwd(),
+        os.path.join(os.getcwd(), "tools")
     ]
     
     for d in search_paths:

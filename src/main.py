@@ -239,7 +239,7 @@ def start_transcribe():
 @app.route('/api/files', methods=['GET'])
 def list_files():
     # List files in the project root directory
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    base_dir = os.getcwd()
     allowed_extensions = {'.mp4', '.mkv', '.webm', '.mov', '.avi', '.mp3', '.wav', '.m4a', '.txt'}
     
     files_list = []
@@ -267,7 +267,7 @@ def list_files():
 def open_folder():
     try:
         # Open working dir
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        base_dir = os.getcwd()
         os.startfile(os.path.normpath(base_dir))
         return jsonify({"success": True})
     except Exception as e:
@@ -299,11 +299,14 @@ def delete_file():
 
 @app.route('/api/check-tools', methods=['GET'])
 def check_tools():
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    base_dir = os.getcwd()
     search_paths = [
         base_dir,
         os.path.join(base_dir, "tools"),
-        os.path.join(base_dir, "src")
+        os.path.join(base_dir, "src"),
+        # Also fall back to the temp extracted folder where main.py actually is
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools")
     ]
     ffmpeg_exists = False
     ffprobe_exists = False
@@ -332,7 +335,7 @@ def install_tools():
             running_task["progress"] = 0.0
             print("\n--- 開始自動下載安裝 FFmpeg 與 FFprobe 組件 ---")
             
-            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            base_dir = os.getcwd()
             tools_dir = os.path.join(base_dir, "tools")
             if not os.path.exists(tools_dir):
                 os.makedirs(tools_dir)
@@ -387,7 +390,7 @@ def clean_environment():
         
     try:
         # Write uninstall.flag to the root directory
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        base_dir = os.getcwd()
         flag_path = os.path.join(base_dir, "uninstall.flag")
         with open(flag_path, "w") as f:
             f.write("uninstall")
@@ -409,7 +412,83 @@ def clean_environment():
     except Exception as e:
         return jsonify({"success": False, "message": f"啟動清理失敗: {str(e)}"}), 500
 
+def check_and_update_dependencies():
+    """在背景檢查並自動升級 yt-dlp 等依賴"""
+    print("[SYSTEM] 正在背景檢查並更新 yt-dlp 核心下載組件，請稍候... 🌻")
+    try:
+        # 執行靜默升級指令
+        res = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+        )
+        if res.returncode == 0:
+            print("[SYSTEM] yt-dlp 核心下載組件已檢查並更新至最新版本！")
+        else:
+            print(f"[SYSTEM] 核心組件升級回傳錯誤碼: {res.returncode}. 訊息: {res.stderr.strip()}")
+    except Exception as e:
+        print(f"[SYSTEM] 核心下載組件背景自動更新失敗: {str(e)}")
+
+def auto_install_tools_if_missing():
+    """在背景自動檢查並安裝 FFmpeg/FFprobe，若缺失則自動下載"""
+    base_dir = os.getcwd()
+    search_paths = [
+        base_dir,
+        os.path.join(base_dir, "tools"),
+        os.path.join(base_dir, "src"),
+        # Also fall back to the temp extracted folder where main.py actually is
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools")
+    ]
+    ffmpeg_exists = False
+    ffprobe_exists = False
+    
+    for d in search_paths:
+        if os.path.exists(os.path.join(d, "ffmpeg.exe")):
+            ffmpeg_exists = True
+        if os.path.exists(os.path.join(d, "ffprobe.exe")):
+            ffprobe_exists = True
+            
+    if not (ffmpeg_exists and ffprobe_exists):
+        print("[SYSTEM] 偵測到本機缺少必要核心組件 (FFmpeg/FFprobe)，啟動背景自動安裝程序...")
+        try:
+            tools_dir = os.path.join(base_dir, "tools")
+            if not os.path.exists(tools_dir):
+                os.makedirs(tools_dir)
+                
+            urls = {
+                "ffmpeg": "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffmpeg-6.1-win-64.zip",
+                "ffprobe": "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffprobe-6.1-win-64.zip"
+            }
+            
+            headers = {'User-Agent': 'Mozilla/5.0'}
+            for name, url in urls.items():
+                dest_exe = os.path.join(tools_dir, f"{name}.exe")
+                if os.path.exists(dest_exe):
+                    continue
+                
+                print(f"[SYSTEM] 正在背景下載 {name} 組件包...")
+                req = urllib.request.Request(url, headers=headers)
+                with urllib.request.urlopen(req) as response:
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp_file:
+                        tmp_file.write(response.read())
+                        tmp_path = tmp_file.name
+                        
+                with zipfile.ZipFile(tmp_path, 'r') as zip_ref:
+                    zip_ref.extract(f"{name}.exe", tools_dir)
+                os.remove(tmp_path)
+                print(f"[SYSTEM] 背景部署 {name}.exe 成功！")
+            print("[SYSTEM] 所有必要核心組件 (FFmpeg/FFprobe) 已自動背景下載安裝完成！")
+        except Exception as e:
+            print(f"[SYSTEM] 背景自動安裝核心組件失敗: {str(e)}")
+
 if __name__ == '__main__':
+    # 啟動背景更新與部署線程
+    threading.Thread(target=check_and_update_dependencies, daemon=True).start()
+    threading.Thread(target=auto_install_tools_if_missing, daemon=True).start()
+
     # Make sure we run on 8000
     print("[Sunflower] 向日葵本地網頁伺服器啟動中，請打開 http://localhost:8000")
-    app.run(host='127.0.0.1', port=8000, debug=False)
+    app.run(host='127.0.0.1', port=8000, debug=False, threaded=True)

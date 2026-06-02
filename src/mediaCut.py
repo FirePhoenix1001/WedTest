@@ -9,11 +9,13 @@ def get_ffmpeg_path():
     else:
         base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-    # 檢查順序：根目錄 -> tools -> src
+    # 檢查順序：根目錄 -> tools -> src -> CWD -> CWD/tools
     search_paths = [
         base_path,
         os.path.join(base_path, "tools"),
-        os.path.join(base_path, "src")
+        os.path.join(base_path, "src"),
+        os.getcwd(),
+        os.path.join(os.getcwd(), "tools")
     ]
 
     for d in search_paths:
