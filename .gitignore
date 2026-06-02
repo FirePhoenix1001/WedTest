@@ -17,3 +17,16 @@ dist/
 # --- 4. 忽略開發工具設定 ---
 .vscode/
 .idea/
+
+# --- 5. 忽略本地下載、剪輯與辨識生成的檔案 ---
+*.mp4
+*.mkv
+*.webm
+*.mov
+*.avi
+*.mp3
+*.wav
+*.m4a
+*.txt
+uninstall.flag
+tools/

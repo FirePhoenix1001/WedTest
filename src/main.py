@@ -484,10 +484,21 @@ def auto_install_tools_if_missing():
         except Exception as e:
             print(f"[SYSTEM] 背景自動安裝核心組件失敗: {str(e)}")
 
+def open_browser():
+    """自動開啟瀏覽器對接網頁端"""
+    import webbrowser
+    import time
+    time.sleep(1.5)
+    try:
+        webbrowser.open("https://FirePhoenix1001.github.io/WedTest/")
+    except Exception as e:
+        print(f"[SYSTEM] 無法自動開啟瀏覽器: {str(e)}")
+
 if __name__ == '__main__':
     # 啟動背景更新與部署線程
     threading.Thread(target=check_and_update_dependencies, daemon=True).start()
     threading.Thread(target=auto_install_tools_if_missing, daemon=True).start()
+    threading.Thread(target=open_browser, daemon=True).start()
 
     # Make sure we run on 8000
     print("[Sunflower] 向日葵本地網頁伺服器啟動中，請打開 http://localhost:8000")
