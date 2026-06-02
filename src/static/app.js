@@ -3,6 +3,9 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Dynamic API Base URL for GitHub Pages support
+    const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname === '::1') ? '' : 'http://localhost:8000';
+
     // DOM Elements - Navigation & Theme
     const tabs = document.querySelectorAll('.nav-tab');
     const tabPanes = document.querySelectorAll('.tab-pane');
@@ -95,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Open workspace folder
     openWorkspaceBtn.addEventListener('click', () => {
-        fetch('/api/open-folder', { method: 'POST' })
+        fetch(API_BASE + '/api/open-folder', { method: 'POST' })
             .then(res => res.json())
             .then(data => {
                 if (!data.success) showToast("無法開啟程式資料夾：" + data.message, "error");
@@ -104,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Tool dependency checks and management
     function checkTools() {
-        fetch('/api/check-tools')
+        fetch(API_BASE + '/api/check-tools')
             .then(res => res.json())
             .then(data => {
                 if (data.installed) {
@@ -125,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
         installToolsBtn.disabled = true;
         installToolsBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 下載安裝中...';
         
-        fetch('/api/install-tools', { method: 'POST' })
+        fetch(API_BASE + '/api/install-tools', { method: 'POST' })
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
@@ -145,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     uninstallToolsBtn.addEventListener('click', () => {
         if (confirm("確定要完全移除電腦中的 FFmpeg 與 FFprobe 組件嗎？\n移除後將無法進行影片下載與無損剪輯。")) {
-            fetch('/api/uninstall-tools', { method: 'POST' })
+            fetch(API_BASE + '/api/uninstall-tools', { method: 'POST' })
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
@@ -164,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
        =================================================== */
     
     // Connect to Server-Sent Event log stream
-    const eventSource = new EventSource('/api/stream-logs');
+    const eventSource = new EventSource(API_BASE + '/api/stream-logs');
     
     eventSource.onmessage = (event) => {
         const logLineText = event.data;
@@ -237,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (taskCheckInterval) clearInterval(taskCheckInterval);
         
         taskCheckInterval = setInterval(() => {
-            fetch('/api/status')
+            fetch(API_BASE + '/api/status')
                 .then(res => res.json())
                 .then(data => {
                     const buttons = [startDownloadBtn, startCutBtn, startTranscribeBtn];
@@ -292,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         startDownloadBtn.disabled = true;
-        fetch('/api/download', {
+        fetch(API_BASE + '/api/download', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ url, mode })
@@ -324,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const end_time = getFormattedTime(endH, endM, endS);
 
         startCutBtn.disabled = true;
-        fetch('/api/cut', {
+        fetch(API_BASE + '/api/cut', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ input_path, start_time, end_time })
@@ -356,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const show_timestamps = showTimestampsCheck.checked;
 
         startTranscribeBtn.disabled = true;
-        fetch('/api/transcribe', {
+        fetch(API_BASE + '/api/transcribe', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ input_path, model_size, show_timestamps })
@@ -390,7 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function loadFiles() {
         filesListBody.innerHTML = '<tr><td colspan="4" class="empty-message"><i class="fa-solid fa-circle-notch fa-spin"></i> 載入檔案清單中...</td></tr>';
         
-        fetch('/api/files')
+        fetch(API_BASE + '/api/files')
             .then(res => res.json())
             .then(data => {
                 if (!data.success) {
@@ -456,7 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Expose helpers globally so they can be triggered from onclick attributes in dynamically generated HTML
     window.openFileLocally = function(path) {
-        fetch('/api/open-file', {
+        fetch(API_BASE + '/api/open-file', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ path })
@@ -500,7 +503,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.deleteFileLocally = function(path, filename) {
         if (confirm(`確定要永久刪除此檔案嗎？\n檔名: ${filename}`)) {
-            fetch('/api/delete-file', {
+            fetch(API_BASE + '/api/delete-file', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ path })
