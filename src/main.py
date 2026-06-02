@@ -414,6 +414,10 @@ def clean_environment():
 
 def check_and_update_dependencies():
     """在背景檢查並自動升級 yt-dlp 等依賴"""
+    if getattr(sys, 'frozen', False):
+        print("[SYSTEM] 偵測到為打包執行檔環境，跳過背景 pip 套件更新。")
+        return
+
     print("[SYSTEM] 正在背景檢查並更新 yt-dlp 核心下載組件，請稍候... 🌻")
     try:
         # 執行靜默升級指令
@@ -495,6 +499,9 @@ def open_browser():
         print(f"[SYSTEM] 無法自動開啟瀏覽器: {str(e)}")
 
 if __name__ == '__main__':
+    import multiprocessing
+    multiprocessing.freeze_support()
+
     # 啟動背景更新與部署線程
     threading.Thread(target=check_and_update_dependencies, daemon=True).start()
     threading.Thread(target=auto_install_tools_if_missing, daemon=True).start()
