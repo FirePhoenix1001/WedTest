@@ -6,7 +6,7 @@ import sys
 block_cipher = None
 
 # Ensure the paths are resolved correctly relative to spec file location
-project_dir = os.path.abspath(os.path.dirname(__file__))
+project_dir = SPECPATH
 
 a = Analysis(
     [os.path.join(project_dir, 'src', 'main.py')],
