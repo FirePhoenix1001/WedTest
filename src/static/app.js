@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const openWorkspaceBtn = document.getElementById('open-workspace-btn');
     const dependencyBanner = document.getElementById('dependency-banner');
     const installToolsBtn = document.getElementById('install-tools-btn');
-    const uninstallToolsBtn = document.getElementById('uninstall-tools-btn');
+    const cleanEnvBtn = document.getElementById('clean-env-btn');
 
     // DOM Elements - YouTube Tab
     const downloadUrl = document.getElementById('download-url');
@@ -112,10 +112,8 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(data => {
                 if (data.installed) {
                     dependencyBanner.classList.add('hide');
-                    uninstallToolsBtn.style.display = 'flex';
                 } else {
                     dependencyBanner.classList.remove('hide');
-                    uninstallToolsBtn.style.display = 'none';
                 }
             })
             .catch(err => console.error("Error checking tools:", err));
@@ -146,16 +144,16 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     });
 
-    uninstallToolsBtn.addEventListener('click', () => {
-        if (confirm("確定要完全移除電腦中的 FFmpeg 與 FFprobe 組件嗎？\n移除後將無法進行影片下載與無損剪輯。")) {
-            fetch(API_BASE + '/api/uninstall-tools', { method: 'POST' })
+    cleanEnvBtn.addEventListener('click', () => {
+        if (confirm("⚠️ 警告：此操作將會卸載並關閉此程式！\n這將會「永久刪除」：\n1. 您下載與處理過的所有影片和文字檔案\n2. 此專案為您安裝的 Python 與 pip 套件\n3. 本機安裝的 FFmpeg 與 FFprobe 組件\n\n確定要完全清空環境並卸載嗎？")) {
+            fetch(API_BASE + '/api/clean-environment', { method: 'POST' })
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        showToast(data.message, "success");
-                        checkTools();
+                        alert(data.message);
+                        document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#fff;font-family:sans-serif;font-size:1.5rem;background:#1a1614;text-align:center;padding:20px;">環境卸載中，本機伺服器已關閉。<br>您可以安全地關閉此網頁瀏覽器視窗。</div>';
                     } else {
-                        showToast("移除失敗：" + data.message, "error");
+                        showToast("啟動清理失敗：" + data.message, "error");
                     }
                 })
                 .catch(err => showToast("連線後端失敗", "error"));

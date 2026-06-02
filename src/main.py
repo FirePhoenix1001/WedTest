@@ -380,30 +380,34 @@ def install_tools():
     threading.Thread(target=install_thread_func, daemon=True).start()
     return jsonify({"success": True, "message": "安裝任務已在背景啟動。"})
 
-@app.route('/api/uninstall-tools', methods=['POST'])
-def uninstall_tools():
+@app.route('/api/clean-environment', methods=['POST'])
+def clean_environment():
     if running_task["active"]:
-        return jsonify({"success": False, "message": "目前有其他任務正在執行中，無法解除安裝。"}), 400
+        return jsonify({"success": False, "message": "目前有其他任務正在執行中，無法清空環境。"}), 400
         
     try:
+        # Write uninstall.flag to the root directory
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        search_paths = [
-            base_dir,
-            os.path.join(base_dir, "tools"),
-            os.path.join(base_dir, "src")
-        ]
-        deleted_count = 0
-        for d in search_paths:
-            for name in ["ffmpeg.exe", "ffprobe.exe"]:
-                file_path = os.path.join(d, name)
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-                    deleted_count += 1
-                    
-        print(f"\n[SYSTEM] 已成功從系統中移除 {deleted_count} 個組件檔案。")
-        return jsonify({"success": True, "message": "必要組件已成功解除安裝！"})
+        flag_path = os.path.join(base_dir, "uninstall.flag")
+        with open(flag_path, "w") as f:
+            f.write("uninstall")
+            
+        # Shut down the server in a separate thread after 3 seconds
+        def shutdown():
+            import time
+            import os
+            time.sleep(3.0)
+            print("\n[SYSTEM] 正在關閉伺服器並執行環境清理程序...")
+            os._exit(0)
+            
+        threading.Thread(target=shutdown).start()
+        
+        return jsonify({
+            "success": True, 
+            "message": "已成功啟動清理程序！伺服器將在 3 秒內關閉，批次檔將開始解除安裝 Python、相關套件及所有下載檔案。"
+        })
     except Exception as e:
-        return jsonify({"success": False, "message": f"解除安裝失敗: {str(e)}"}), 500
+        return jsonify({"success": False, "message": f"啟動清理失敗: {str(e)}"}), 500
 
 if __name__ == '__main__':
     # Make sure we run on 8000
