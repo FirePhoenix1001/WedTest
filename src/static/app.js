@@ -122,11 +122,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (statusData && statusData.active && statusData.type === 'install') {
                         dependencyBanner.classList.add('hide');
                     } else {
-                        dependencyBanner.classList.remove('hide');
+                        // 只有當後端已連線時才顯示缺少組件
+                        if (isBackendConnected) {
+                            dependencyBanner.classList.remove('hide');
+                        } else {
+                            dependencyBanner.classList.add('hide');
+                        }
                     }
                 }
             })
-            .catch(err => console.error("Error checking tools:", err));
+            .catch(err => {
+                console.error("Error checking tools:", err);
+                dependencyBanner.classList.add('hide');
+            });
     }
 
     // Check on page load
@@ -183,6 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function setConnectionStatus(connected) {
         if (connected) {
             if (!isBackendConnected) {
+                isBackendConnected = true;
                 // 自動重新獲取組件狀態與檔案清單，恢復連接
                 checkTools();
                 loadFiles();
@@ -211,6 +220,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         if (connectionBanner) {
                             connectionBanner.classList.remove('hide');
+                        }
+                        if (dependencyBanner) {
+                            dependencyBanner.classList.add('hide');
                         }
                         appendTerminalLog("[SYSTEM] 警告：與背景伺服器失去連線！請確認本地執行檔是否已啟動。");
                     }, 2000);
@@ -613,7 +625,7 @@ document.addEventListener('DOMContentLoaded', () => {
        6. Toast Notification Helper
        =================================================== */
 
-    function showToast(message, type = 'success') {
+    function showToast(message, type = 'success', duration = 4000) {
         const toast = document.createElement('div');
         toast.className = `custom-toast toast-${type}`;
         

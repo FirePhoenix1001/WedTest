@@ -590,7 +590,6 @@ if __name__ == '__main__':
 
     # 啟動背景更新與部署線程
     threading.Thread(target=check_and_update_dependencies, daemon=True).start()
-    threading.Thread(target=auto_install_tools_if_missing, daemon=True).start()
     threading.Thread(target=open_browser, daemon=True).start()
 
     # Make sure we run on 8000
