@@ -40,7 +40,9 @@ class QueueLogger:
                 except Exception:
                     text = str(text)
 
-            # Filter out repetitive poller logs to keep terminal and UI console clean
+            # 阻擋 Werkzeug 的 HTTP 連線存取日誌，以及重複的 poller 輪詢
+            if "127.0.0.1 - - [" in text:
+                return
             if "GET /api/status" in text or "GET /api/files" in text:
                 return
 
@@ -128,16 +130,15 @@ def start_download():
             running_task["active"] = True
             running_task["type"] = "download"
             running_task["progress"] = 0.0
-            print(f"\n--- 下載任務開始 ---")
+            print(f"\n[SYSTEM] 下載任務開始...")
             print(f"網址: {url}")
-            print(f"模式: {mode} (1:僅影像, 2:僅聲音, 3:合併)")
             
             youtubeDownload.download_video(url, mode, progress_callback=progress_callback)
             
             running_task["progress"] = 1.0
-            print(f"--- 下載任務成功完成！ ---")
+            print(f"[SYSTEM] 下載成功！")
         except Exception as e:
-            print(f"--- 下載發生錯誤: {str(e)} ---")
+            print(f"[SYSTEM] 下載失敗: {str(e)}")
         finally:
             running_task["active"] = False
             running_task["type"] = None
@@ -163,9 +164,8 @@ def start_cut():
             running_task["active"] = True
             running_task["type"] = "cut"
             running_task["progress"] = 0.0
-            print(f"\n--- 剪輯任務開始 ---")
+            print(f"\n[SYSTEM] 剪輯任務開始...")
             print(f"檔案: {os.path.basename(input_path)}")
-            print(f"時間區間: {start_time} -> {end_time}")
             
             # Start progress simulation
             progress_callback(0.2)
@@ -173,10 +173,10 @@ def start_cut():
             
             if success:
                 progress_callback(1.0)
-                print(f"--- 剪輯成功！輸出檔案: {result} ---")
+                print(f"[SYSTEM] 剪輯成功！輸出: {result}")
             else:
                 progress_callback(0.0)
-                print(f"--- 剪輯失敗: {result} ---")
+                print(f"[SYSTEM] 剪輯失敗: {result}")
         except Exception as e:
             progress_callback(0.0)
             print(f"--- 剪輯發生異常錯誤: {str(e)} ---")
@@ -206,13 +206,12 @@ def start_transcribe():
             running_task["active"] = True
             running_task["type"] = "transcribe"
             running_task["progress"] = 0.0
-            print(f"\n--- 語音辨識任務開始 ---")
+            print(f"\n[SYSTEM] 語音辨識任務開始...")
             print(f"檔案: {os.path.basename(input_path)}")
-            print(f"模型大小: {model_size}")
             
             # Load or switch Whisper model
             if audio_processor is None or audio_processor.model_size != model_size:
-                print(f"正在建立或更換 Whisper 語音模型 ({model_size})，這在首次或切換模型時會花費較長的時間...")
+                print(f"[SYSTEM] 正在載入 Whisper ({model_size}) 模型...")
                 audio_processor = AudioProcessor(model_size=model_size)
             
             output_path = os.path.splitext(input_path)[0] + "_辨識結果.txt"
@@ -225,10 +224,10 @@ def start_transcribe():
             )
             
             progress_callback(1.0)
-            print(f"--- 語音辨識成功！輸出結果已儲存於: {output_path} ---")
+            print(f"[SYSTEM] 辨識成功！儲存於: {output_path}")
         except Exception as e:
             progress_callback(0.0)
-            print(f"--- 語音辨識出錯: {str(e)} ---")
+            print(f"[SYSTEM] 辨識失敗: {str(e)}")
         finally:
             running_task["active"] = False
             running_task["type"] = None
@@ -382,7 +381,7 @@ def install_tools():
             running_task["active"] = True
             running_task["type"] = "install"
             running_task["progress"] = 0.0
-            print("\n--- 開始自動下載安裝 FFmpeg、FFprobe 與 yt-dlp 組件 ---")
+            print("\n[SYSTEM] 開始下載必要核心組件...")
             
             base_dir = os.getcwd()
             tools_dir = os.path.join(base_dir, "tools")
@@ -404,21 +403,19 @@ def install_tools():
                 if name == "yt-dlp":
                     dest_exe = os.path.join(tools_dir, "yt-dlp.exe")
                     if os.path.exists(dest_exe):
-                        print("[SYSTEM] yt-dlp.exe 已經存在，跳過。")
                         continue
-                    print("[SYSTEM] 正在從 GitHub 下載最新版 yt-dlp.exe...")
+                    print("[SYSTEM] 下載 yt-dlp.exe...")
                     req = urllib.request.Request(url, headers=headers)
                     with urllib.request.urlopen(req) as response:
                         with open(dest_exe, "wb") as f:
                             f.write(response.read())
-                    print("[SYSTEM] yt-dlp.exe 安裝成功！")
+                    print("[SYSTEM] yt-dlp 安裝完成")
                 else:
                     dest_exe = os.path.join(tools_dir, f"{name}.exe")
                     if os.path.exists(dest_exe):
-                        print(f"[SYSTEM] {name}.exe 已經存在，跳過。")
                         continue
                         
-                    print(f"[SYSTEM] 正在從 CDN 下載 {name} 組件包...")
+                    print(f"[SYSTEM] 下載 {name}.exe...")
                     req = urllib.request.Request(url, headers=headers)
                     with urllib.request.urlopen(req) as response:
                         with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp_file:
@@ -426,15 +423,15 @@ def install_tools():
                             tmp_path = tmp_file.name
                     
                     progress_callback(step_progress_start + 0.2)
-                    print(f"[SYSTEM] 正在解壓縮並安裝 {name}.exe 至 tools 目錄...")
+                    print(f"[SYSTEM] 安裝 {name}.exe...")
                     with zipfile.ZipFile(tmp_path, 'r') as zip_ref:
                         zip_ref.extract(f"{name}.exe", tools_dir)
                         
                     os.remove(tmp_path)
-                    print(f"[SYSTEM] {name}.exe 安裝成功！")
+                    print(f"[SYSTEM] {name} 安裝完成")
                 
             progress_callback(1.0)
-            print("--- 所有必要組件已成功下載與安裝！請重新整理網頁。 ---")
+            print("[SYSTEM] 所有組件安裝完成！")
             
             # 下載完後背景觸發一次更新以防萬一
             threading.Thread(target=check_and_update_dependencies, daemon=True).start()
@@ -454,28 +451,34 @@ def clean_environment():
         return jsonify({"success": False, "message": "目前有其他任務正在執行中，無法清空環境。"}), 400
         
     try:
-        # Write uninstall.flag to the root directory
         base_dir = os.getcwd()
-        flag_path = os.path.join(base_dir, "uninstall.flag")
-        with open(flag_path, "w") as f:
-            f.write("uninstall")
+        tools_dir = os.path.join(base_dir, "tools")
+        
+        # 僅刪除本機下載的核心組件資料夾
+        import shutil
+        if os.path.exists(tools_dir):
+            shutil.rmtree(tools_dir, ignore_errors=True)
             
-        # Shut down the server in a separate thread after 3 seconds
+        # 移除解壓卸載 flag
+        flag_path = os.path.join(base_dir, "uninstall.flag")
+        if os.path.exists(flag_path):
+            os.remove(flag_path)
+            
+        # 1.5 秒後背景關閉伺服器
         def shutdown():
             import time
-            import os
-            time.sleep(3.0)
-            print("\n[SYSTEM] 正在關閉伺服器並執行環境清理程序...")
+            time.sleep(1.5)
+            print("\n[SYSTEM] 已完成環境清理，正在關閉伺服器...")
             os._exit(0)
             
         threading.Thread(target=shutdown).start()
         
         return jsonify({
             "success": True, 
-            "message": "已成功啟動清理程序！伺服器將在 3 秒內關閉，批次檔將開始解除安裝 Python、相關套件及所有下載檔案。"
+            "message": "本機環境清理成功！tools 資料夾已刪除。伺服器即將自動關閉。"
         })
     except Exception as e:
-        return jsonify({"success": False, "message": f"啟動清理失敗: {str(e)}"}), 500
+        return jsonify({"success": False, "message": f"清理失敗: {str(e)}"}), 500
 
 def check_and_update_dependencies():
     """在背景執行 yt-dlp.exe 自我升級指令"""
@@ -483,7 +486,7 @@ def check_and_update_dependencies():
     if not os.path.exists(ytdlp_path):
         return
         
-    print("[SYSTEM] 正在背景檢查並自動更新 yt-dlp 執行核心...")
+    print("[SYSTEM] 檢查 yt-dlp 更新...")
     try:
         res = subprocess.run(
             [ytdlp_path, "--update"],
@@ -494,9 +497,9 @@ def check_and_update_dependencies():
         )
         if res.returncode == 0:
             out_str = res.stdout.strip()
-            print(f"[SYSTEM] yt-dlp 更新完成: {out_str}")
+            print("[SYSTEM] yt-dlp 已是最新版" if "latest" in out_str or "up to date" in out_str else "[SYSTEM] yt-dlp 更新完成")
         else:
-            print(f"[SYSTEM] yt-dlp 更新回傳錯誤碼: {res.returncode}. 訊息: {res.stderr.strip()}")
+            print(f"[SYSTEM] yt-dlp 更新錯誤: {res.returncode}")
     except Exception as e:
         print(f"[SYSTEM] yt-dlp 背景更新失敗: {str(e)}")
 
@@ -524,7 +527,7 @@ def auto_install_tools_if_missing():
             ytdlp_exists = True
             
     if not (ffmpeg_exists and ffprobe_exists and ytdlp_exists):
-        print("[SYSTEM] 偵測到本機缺少必要核心組件 (FFmpeg/FFprobe/yt-dlp)，啟動背景自動下載與部署程序...")
+        print("[SYSTEM] 偵測到缺少組件，啟動背景下載...")
         try:
             # 優先檢測網路連線狀態
             try:
@@ -548,18 +551,18 @@ def auto_install_tools_if_missing():
                     dest_exe = os.path.join(tools_dir, "yt-dlp.exe")
                     if os.path.exists(dest_exe):
                         continue
-                    print("[SYSTEM] 正在背景下載最新版 yt-dlp.exe 組件...")
+                    print("[SYSTEM] 背景下載 yt-dlp.exe...")
                     req = urllib.request.Request(url, headers=headers)
                     with urllib.request.urlopen(req) as response:
                         with open(dest_exe, "wb") as f:
                             f.write(response.read())
-                    print("[SYSTEM] 背景部署 yt-dlp.exe 成功！")
+                    print("[SYSTEM] 背景部署 yt-dlp 完成")
                 else:
                     dest_exe = os.path.join(tools_dir, f"{name}.exe")
                     if os.path.exists(dest_exe):
                         continue
                     
-                    print(f"[SYSTEM] 正在背景下載 {name} 組件包...")
+                    print(f"[SYSTEM] 背景下載 {name}.exe...")
                     req = urllib.request.Request(url, headers=headers)
                     with urllib.request.urlopen(req) as response:
                         with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp_file:
@@ -569,8 +572,8 @@ def auto_install_tools_if_missing():
                     with zipfile.ZipFile(tmp_path, 'r') as zip_ref:
                         zip_ref.extract(f"{name}.exe", tools_dir)
                     os.remove(tmp_path)
-                    print(f"[SYSTEM] 背景部署 {name}.exe 成功！")
-            print("[SYSTEM] 所有必要核心組件已自動背景下載與部署完成！")
+                    print(f"[SYSTEM] 背景部署 {name} 完成")
+            print("[SYSTEM] 背景組件下載完成")
             
             # 下載完成後立即順便背景執行一次更新
             threading.Thread(target=check_and_update_dependencies, daemon=True).start()
