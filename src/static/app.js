@@ -158,13 +158,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     cleanEnvBtn.addEventListener('click', () => {
-        if (confirm("⚠️ 警告：確認要清空本機環境嗎？\n此操作將會刪除本機已下載的 FFmpeg、FFprobe 及 yt-dlp 等核心組件 (tools 資料夾)，並關閉背景伺服器。")) {
+        if (confirm("⚠️ 警告：確認要清空本機環境嗎？\n此操作將會刪除本機已下載的 FFmpeg、FFprobe 及 yt-dlp 等核心組件 (tools 資料夾)。")) {
             fetch(API_BASE + '/api/clean-environment', { method: 'POST' })
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        alert(data.message);
-                        document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#fff;font-family:sans-serif;font-size:1.5rem;background:#1a1614;text-align:center;padding:20px;">環境清理完成，本機伺服器已關閉。<br>您可以安全地關閉此網頁瀏覽器視窗。</div>';
+                        showToast(data.message, "success");
+                        // 重新檢查組件狀態以自動顯現缺少工具的黃色 Alert Banner
+                        checkTools();
                     } else {
                         showToast("啟動清理失敗：" + data.message, "error");
                     }

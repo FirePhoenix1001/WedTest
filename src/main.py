@@ -40,8 +40,10 @@ class QueueLogger:
                 except Exception:
                     text = str(text)
 
-            # 阻擋 Werkzeug 的 HTTP 連線存取日誌，以及重複的 poller 輪詢
+            # 阻擋 Werkzeug 的 HTTP 連線存取日誌、Flask 啟動日誌及重複的 poller 輪詢
             if "127.0.0.1 - - [" in text:
+                return
+            if "Serving Flask app" in text or "Debug mode:" in text or "WARNING: This is a development server" in text or "Press CTRL+C to quit" in text or "Running on http://" in text:
                 return
             if "GET /api/status" in text or "GET /api/files" in text:
                 return
@@ -464,18 +466,10 @@ def clean_environment():
         if os.path.exists(flag_path):
             os.remove(flag_path)
             
-        # 1.5 秒後背景關閉伺服器
-        def shutdown():
-            import time
-            time.sleep(1.5)
-            print("\n[SYSTEM] 已完成環境清理，正在關閉伺服器...")
-            os._exit(0)
-            
-        threading.Thread(target=shutdown).start()
-        
+        print("[SYSTEM] 已清空本機核心組件 (tools/ 資料夾已刪除)")
         return jsonify({
             "success": True, 
-            "message": "本機環境清理成功！tools 資料夾已刪除。伺服器即將自動關閉。"
+            "message": "本機環境清理成功！已刪除本機下載的核心組件。"
         })
     except Exception as e:
         return jsonify({"success": False, "message": f"清理失敗: {str(e)}"}), 500
@@ -600,5 +594,4 @@ if __name__ == '__main__':
     threading.Thread(target=open_browser, daemon=True).start()
 
     # Make sure we run on 8000
-    print("[Sunflower] 向日葵本地網頁伺服器啟動中，請打開 http://localhost:8000")
     app.run(host='127.0.0.1', port=8000, debug=False, threaded=True)
