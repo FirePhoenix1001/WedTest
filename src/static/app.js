@@ -185,8 +185,22 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Connection status tracking
     let isBackendConnected = false;
-    let disconnectTimeout = null;
     const connectionDot = document.getElementById('connection-dot');
+
+    // 啟動時預設啟動一個 2 秒的連線超時計時器。若 2 秒內未成功與後端連線，即顯示「未連線至背景伺服器」警告
+    let disconnectTimeout = setTimeout(() => {
+        if (connectionDot) {
+            connectionDot.className = 'connection-dot disconnected';
+            connectionDot.title = '與後端服務中斷連線...';
+        }
+        if (connectionBanner) {
+            connectionBanner.classList.remove('hide');
+        }
+        if (dependencyBanner) {
+            dependencyBanner.classList.add('hide');
+        }
+        appendTerminalLog("[SYSTEM] 警告：與背景伺服器失去連線！請確認本地執行檔是否已啟動。");
+    }, 2000);
 
     function setConnectionStatus(connected) {
         if (connected) {
