@@ -69,6 +69,17 @@
                 </button>
             </div>
 
+            <!-- Connection Alert Banner -->
+            <div id="connection-banner" class="connection-banner hide">
+                <div class="banner-content">
+                    <span class="banner-icon"><i class="fa-solid fa-circle-exclamation"></i></span>
+                    <div class="banner-text">
+                        <h3>未連線至背景伺服器</h3>
+                        <p>無法讀取本地檔案或執行下載/剪輯/語音辨識。請確保已經雙擊執行了本機的 <strong>SunflowerLauncher.exe</strong> 啟動器。</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Tabs Contents -->
             <div class="tab-contents">
                 
@@ -129,7 +140,8 @@
                         <div class="input-group">
                             <label for="cut-file-path"><i class="fa-solid fa-file-video"></i> 本地檔案絕對路徑</label>
                             <div class="path-input-wrapper">
-                                <input type="text" id="cut-file-path" placeholder="請輸入本機檔案路徑 (例如 C:\Videos\test.mp4) 或從檔案管理中點選">
+                                <input type="text" id="cut-file-path" placeholder="請輸入本機檔案路徑 (例如 C:\Videos\test.mp4) 或從檔案管理中點選 / 直接拖曳檔案至此">
+                                <button id="browse-cut-btn" class="browse-btn" type="button" title="選擇本地檔案"><i class="fa-solid fa-folder-open"></i> 瀏覽檔案</button>
                             </div>
                         </div>
 
@@ -174,7 +186,10 @@
                     <div class="form-container">
                         <div class="input-group">
                             <label for="transcribe-file-path"><i class="fa-solid fa-file-audio"></i> 本地檔案絕對路徑</label>
-                            <input type="text" id="transcribe-file-path" placeholder="請輸入本機檔案路徑 (例如 C:\Videos\test.mp3) 或從檔案管理中點選">
+                            <div class="path-input-wrapper">
+                                <input type="text" id="transcribe-file-path" placeholder="請輸入本機檔案路徑 (例如 C:\Videos\test.mp3) 或從檔案管理中點選 / 直接拖曳檔案至此">
+                                <button id="browse-transcribe-btn" class="browse-btn" type="button" title="選擇本地檔案"><i class="fa-solid fa-folder-open"></i> 瀏覽檔案</button>
+                            </div>
                         </div>
 
                         <div class="form-row">

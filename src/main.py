@@ -297,6 +297,35 @@ def delete_file():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
+@app.route('/api/select-file', methods=['POST'])
+def select_file():
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+        
+        file_path = ""
+        def run_dialog():
+            nonlocal file_path
+            try:
+                root = tk.Tk()
+                root.withdraw()
+                root.attributes("-topmost", True)
+                file_path = filedialog.askopenfilename(
+                    title="選擇媒體檔案",
+                    filetypes=[("媒體與影音檔案", "*.mp4;*.mkv;*.webm;*.mov;*.avi;*.mp3;*.wav;*.m4a;*.*")]
+                )
+                root.destroy()
+            except Exception as ex:
+                print(f"[SYSTEM] 開啟本機檔案選取視窗失敗: {str(ex)}")
+
+        t = threading.Thread(target=run_dialog)
+        t.start()
+        t.join()
+        
+        return jsonify({"success": True, "path": file_path})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
 def get_tool_path(filename):
     base_dir = os.getcwd()
     search_paths = [

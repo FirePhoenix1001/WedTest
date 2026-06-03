@@ -977,3 +977,83 @@ input[type="url"]:focus, input[type="text"]:focus, select:focus {
     }
 }
 
+/* ===================================================
+   Connection Banner Styles
+   =================================================== */
+.connection-banner {
+    display: flex;
+    background-color: rgba(239, 83, 80, 0.12);
+    border: 1px solid rgba(239, 83, 80, 0.25);
+    color: #ef5350;
+    padding: 16px 24px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    animation: bannerSlideDown 0.4s ease forwards;
+}
+
+.theme-light .connection-banner {
+    background-color: #ffebee;
+    border-color: rgba(239, 83, 80, 0.25);
+    color: #c62828;
+}
+
+.connection-banner.hide {
+    display: none !important;
+}
+
+/* ===================================================
+   Path Input Wrapper & Browse Button
+   =================================================== */
+.path-input-wrapper {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+.path-input-wrapper input {
+    flex: 1;
+}
+
+.browse-btn {
+    background-color: var(--secondary-btn);
+    color: var(--secondary-text);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 0 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.browse-btn:hover:not(:disabled) {
+    background-color: var(--secondary-btn-hover);
+    color: var(--text-primary);
+}
+
+.browse-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ===================================================
+   Dark Mode Selection Dropdowns Text Color Fixes
+   =================================================== */
+.theme-dark select option {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.theme-dark input::placeholder,
+.theme-dark select::placeholder {
+    color: var(--text-muted);
+}
+
+

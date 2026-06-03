@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const openWorkspaceBtn = document.getElementById('open-workspace-btn');
     const dependencyBanner = document.getElementById('dependency-banner');
     const installToolsBtn = document.getElementById('install-tools-btn');
+    const connectionBanner = document.getElementById('connection-banner');
     const cleanEnvBtn = document.getElementById('clean-env-btn');
 
     // DOM Elements - YouTube Tab
@@ -113,7 +114,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.installed) {
                     dependencyBanner.classList.add('hide');
                 } else {
-                    dependencyBanner.classList.remove('hide');
+                    // 偵測是否已經在背景下載部署中，若在下載中則不需要提醒
+                    fetch(API_BASE + '/api/status')
+                        .then(r => r.json())
+                        .then(statusData => {
+                            if (statusData.active && statusData.type === 'install') {
+                                dependencyBanner.classList.add('hide');
+                            } else {
+                                dependencyBanner.classList.remove('hide');
+                            }
+                        })
+                        .catch(() => {
+                            dependencyBanner.classList.remove('hide');
+                        });
                 }
             })
             .catch(err => console.error("Error checking tools:", err));
@@ -186,6 +199,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 connectionDot.className = 'connection-dot connected';
                 connectionDot.title = '後端服務已連線 🌻';
             }
+            if (connectionBanner) {
+                connectionBanner.classList.add('hide');
+            }
         } else {
             if (isBackendConnected) {
                 isBackendConnected = false;
@@ -195,8 +211,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             connectionDot.className = 'connection-dot disconnected';
                             connectionDot.title = '與後端服務中斷連線...';
                         }
+                        if (connectionBanner) {
+                            connectionBanner.classList.remove('hide');
+                        }
                         appendTerminalLog("[SYSTEM] 警告：與背景伺服器失去連線！請確認本地執行檔是否已啟動。");
-                    }, 4000);
+                    }, 2000);
                 }
             }
         }
@@ -641,6 +660,104 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 toast.remove();
             }, 300);
-        }, 4000);
+        }, duration);
     }
+
+    /* ===================================================
+       7. Native File Selector & Drag-and-Drop
+       =================================================== */
+
+    // Select File natively via Python Tkinter dialog
+    function setupFileBrowser(btnId, targetInputId) {
+        const btn = document.getElementById(btnId);
+        const input = document.getElementById(targetInputId);
+        if (!btn || !input) return;
+
+        btn.addEventListener('click', () => {
+            btn.disabled = true;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+            fetch(API_BASE + '/api/select-file', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.path) {
+                        input.value = data.path;
+                        showToast(`已成功選取本機檔案！`, "success");
+                    }
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                })
+                .catch(err => {
+                    console.error("Error selecting file:", err);
+                    showToast("連線伺服器選取檔案失敗。", "error");
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                });
+        });
+    }
+
+    // Drag and drop handler to resolve absolute path if file exists in workspace
+    function setupDragAndDrop(inputEl) {
+        if (!inputEl) return;
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            inputEl.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            inputEl.addEventListener(eventName, () => {
+                inputEl.style.borderColor = 'var(--accent-sunflower)';
+                inputEl.style.boxShadow = '0 0 0 3px var(--accent-shadow)';
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            inputEl.addEventListener(eventName, () => {
+                inputEl.style.borderColor = '';
+                inputEl.style.boxShadow = '';
+            }, false);
+        });
+
+        inputEl.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+
+            if (files && files.length > 0) {
+                const file = files[0];
+                
+                // 優先比對檔案管理清單以獲取完整絕對路徑
+                fetch(API_BASE + '/api/files')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            const matched = data.files.find(f => f.name === file.name);
+                            if (matched) {
+                                inputEl.value = matched.path;
+                                showToast(`已自動對接載入檔案絕對路徑！🌻`, "success");
+                            } else {
+                                showToast(`無法取得「${file.name}」的絕對路徑。建議點擊「瀏覽檔案」選取，或直接放入程式資料夾中。`, "warning", 6000);
+                                inputEl.value = file.name;
+                            }
+                        } else {
+                            inputEl.value = file.name;
+                        }
+                    })
+                    .catch(() => {
+                        inputEl.value = file.name;
+                    });
+            }
+        });
+    }
+
+    setupFileBrowser('browse-cut-btn', 'cut-file-path');
+    setupFileBrowser('browse-transcribe-btn', 'transcribe-file-path');
+
+    setupDragAndDrop(cutFilePath);
+    setupDragAndDrop(transcribeFilePath);
 });
