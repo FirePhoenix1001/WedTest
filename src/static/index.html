@@ -1,17 +1,21 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Youtube 擷取工具 | 向日葵特別網頁版 🌻</title>
+    <title>Youtube 擷取工具</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;600;800&family=Outfit:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;600;800&family=Outfit:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@400;600;700&display=swap"
+        rel="stylesheet">
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body class="theme-dark">
     <div class="app-layout">
         <!-- Sidebar Navigation -->
@@ -19,8 +23,8 @@
             <div class="brand-area">
                 <div class="logo-sunflower"><i class="fa-solid fa-sun"></i></div>
                 <div class="brand-text">
-                    <h2>YoutubeGrabber <span id="connection-dot" class="connection-dot disconnected" title="與後端服務中斷連線..."></span></h2>
-                    <p>向日葵特別網頁版 🌻</p>
+                    <h2>YoutubeGrabber <span id="connection-dot" class="connection-dot disconnected"
+                            title="與後端服務中斷連線..."></span></h2>
                 </div>
             </div>
 
@@ -44,8 +48,9 @@
                 <button id="theme-toggle-btn" class="theme-toggle-btn" title="切換深淺色模式">
                     <i class="fa-solid fa-moon"></i> <span>深色模式</span>
                 </button>
-                <button id="clean-env-btn" class="theme-toggle-btn uninstall-btn" style="border-color: rgba(239, 83, 80, 0.25); color: #ef5350;" title="清空本機所有下載檔案與 Python 環境">
-                    <i class="fa-solid fa-broom"></i> <span>一鍵清空環境</span>
+                <button id="clean-env-btn" class="theme-toggle-btn uninstall-btn"
+                    style="border-color: rgba(239, 83, 80, 0.25); color: #ef5350;" title="清空本機所有下載的核心組件">
+                    <i class="fa-solid fa-broom"></i> <span>一鍵清空組件</span>
                 </button>
                 <button id="open-workspace-btn" class="workspace-btn">
                     <i class="fa-solid fa-folder"></i> 開啟程式資料夾
@@ -60,8 +65,7 @@
                 <div class="banner-content">
                     <span class="banner-icon"><i class="fa-solid fa-triangle-exclamation"></i></span>
                     <div class="banner-text">
-                        <h3>偵測到缺少必要核心組件 (FFmpeg & FFprobe)</h3>
-                        <p>專案需要這些組件才能進行影片下載與無損裁剪。點擊右側按鈕將為您自動安裝部署。</p>
+                        <h3>偵測到缺少必要核心組件 (FFmpeg & FFprobe & YTDLP)</h3>
                     </div>
                 </div>
                 <button id="install-tools-btn" class="install-banner-btn">
@@ -82,18 +86,18 @@
 
             <!-- Tabs Contents -->
             <div class="tab-contents">
-                
+
                 <!-- 1. YouTube Download Tab -->
                 <div id="tab-download" class="tab-pane active">
                     <div class="pane-header">
                         <h2>📥 下載 YouTube 影片/音訊</h2>
-                        <p>輸入 YouTube 連結並選擇您需要的儲存模式，核心腳本將自動更新以防止 403 錯誤。</p>
                     </div>
 
                     <div class="form-container">
                         <div class="input-group">
                             <label for="download-url"><i class="fa-brands fa-youtube"></i> 影片網址 (URL)</label>
-                            <input type="url" id="download-url" placeholder="請在此貼上 YouTube 影片網址 (例如 https://www.youtube.com/watch?v=...)" required>
+                            <input type="url" id="download-url"
+                                placeholder="請在此貼上 YouTube 影片網址 (例如 https://www.youtube.com/watch?v=...)" required>
                         </div>
 
                         <div class="input-group">
@@ -132,16 +136,17 @@
                 <!-- 2. Local Media Cut Tab -->
                 <div id="tab-cut" class="tab-pane">
                     <div class="pane-header">
-                        <h2>✂️ 本地媒體高速度剪輯</h2>
-                        <p>使用 FFmpeg 無損複製技術，在不重新編碼的情況下，極速裁剪影片或音訊。</p>
+                        <h2>✂️ 快速剪輯</h2>
                     </div>
 
                     <div class="form-container">
                         <div class="input-group">
                             <label for="cut-file-path"><i class="fa-solid fa-file-video"></i> 本地檔案絕對路徑</label>
                             <div class="path-input-wrapper">
-                                <input type="text" id="cut-file-path" placeholder="請輸入本機檔案路徑 (例如 C:\Videos\test.mp4) 或從檔案管理中點選 / 直接拖曳檔案至此">
-                                <button id="browse-cut-btn" class="browse-btn" type="button" title="選擇本地檔案"><i class="fa-solid fa-folder-open"></i> 瀏覽檔案</button>
+                                <input type="text" id="cut-file-path"
+                                    placeholder="請輸入本機檔案路徑 (例如 C:\Videos\test.mp4) 或從檔案管理中點選 / 直接拖曳檔案至此">
+                                <button id="browse-cut-btn" class="browse-btn" type="button" title="選擇本地檔案"><i
+                                        class="fa-solid fa-folder-open"></i> 瀏覽檔案</button>
                             </div>
                         </div>
 
@@ -157,7 +162,7 @@
                                     <input type="number" id="start-s" min="0" max="59" value="0" placeholder="秒">
                                 </div>
                             </div>
-                            
+
                             <div class="time-box">
                                 <span class="time-title"><i class="fa-solid fa-stop"></i> 結束時間</span>
                                 <div class="time-inputs">
@@ -179,16 +184,17 @@
                 <!-- 3. Audio Transcriber (Whisper) Tab -->
                 <div id="tab-transcribe" class="tab-pane">
                     <div class="pane-header">
-                        <h2>🎤 AI 語音辨識 (Whisper)</h2>
-                        <p>將本地影片或音訊檔案直接轉換為繁體中文字幕，基於 faster-whisper 引擎。</p>
+                        <h2>🎤 AI 語音辨識</h2>
                     </div>
 
                     <div class="form-container">
                         <div class="input-group">
                             <label for="transcribe-file-path"><i class="fa-solid fa-file-audio"></i> 本地檔案絕對路徑</label>
                             <div class="path-input-wrapper">
-                                <input type="text" id="transcribe-file-path" placeholder="請輸入本機檔案路徑 (例如 C:\Videos\test.mp3) 或從檔案管理中點選 / 直接拖曳檔案至此">
-                                <button id="browse-transcribe-btn" class="browse-btn" type="button" title="選擇本地檔案"><i class="fa-solid fa-folder-open"></i> 瀏覽檔案</button>
+                                <input type="text" id="transcribe-file-path"
+                                    placeholder="請輸入本機檔案路徑 (例如 C:\Videos\test.mp3) 或從檔案管理中點選 / 直接拖曳檔案至此">
+                                <button id="browse-transcribe-btn" class="browse-btn" type="button" title="選擇本地檔案"><i
+                                        class="fa-solid fa-folder-open"></i> 瀏覽檔案</button>
                             </div>
                         </div>
 
@@ -223,7 +229,6 @@
                 <div id="tab-files" class="tab-pane">
                     <div class="pane-header">
                         <h2>📂 下載與輸出檔案管理</h2>
-                        <p>這裡列出了目前儲存在程式根目錄下的所有影片、音訊及文字辨識檔。</p>
                     </div>
 
                     <div class="files-table-container">
@@ -289,4 +294,5 @@
     <!-- JavaScript Controller -->
     <script src="app.js"></script>
 </body>
+
 </html>
