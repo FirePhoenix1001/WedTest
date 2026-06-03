@@ -171,6 +171,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setConnectionStatus(connected) {
         if (connected) {
+            if (!isBackendConnected) {
+                // 自動重新獲取組件狀態與檔案清單，恢復連接
+                checkTools();
+                loadFiles();
+                appendTerminalLog("[SYSTEM] 成功連接至向日葵本地伺服器！🌻");
+            }
             isBackendConnected = true;
             if (disconnectTimeout) {
                 clearTimeout(disconnectTimeout);
@@ -181,16 +187,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 connectionDot.title = '後端服務已連線 🌻';
             }
         } else {
-            isBackendConnected = false;
-            // Only alert if we stay disconnected for more than 4 seconds
-            if (!disconnectTimeout) {
-                disconnectTimeout = setTimeout(() => {
-                    if (connectionDot) {
-                        connectionDot.className = 'connection-dot disconnected';
-                        connectionDot.title = '與後端服務中斷連線...';
-                    }
-                    appendTerminalLog("[SYSTEM] 警告：與背景伺服器失去連線！請確認本地執行檔是否已啟動。");
-                }, 4000);
+            if (isBackendConnected) {
+                isBackendConnected = false;
+                if (!disconnectTimeout) {
+                    disconnectTimeout = setTimeout(() => {
+                        if (connectionDot) {
+                            connectionDot.className = 'connection-dot disconnected';
+                            connectionDot.title = '與後端服務中斷連線...';
+                        }
+                        appendTerminalLog("[SYSTEM] 警告：與背景伺服器失去連線！請確認本地執行檔是否已啟動。");
+                    }, 4000);
+                }
             }
         }
     }
@@ -294,6 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
             fetch(API_BASE + '/api/status')
                 .then(res => res.json())
                 .then(data => {
+                    setConnectionStatus(true);
                     const buttons = [startDownloadBtn, startCutBtn, startTranscribeBtn];
                     
                     if (data.active) {
@@ -325,6 +333,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             checkTools();
                         }
                     }
+                })
+                .catch(err => {
+                    setConnectionStatus(false);
                 });
         }, 1000);
     }

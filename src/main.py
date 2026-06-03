@@ -497,6 +497,12 @@ def auto_install_tools_if_missing():
     if not (ffmpeg_exists and ffprobe_exists and ytdlp_exists):
         print("[SYSTEM] 偵測到本機缺少必要核心組件 (FFmpeg/FFprobe/yt-dlp)，啟動背景自動下載與部署程序...")
         try:
+            # 優先檢測網路連線狀態
+            try:
+                urllib.request.urlopen("https://github.com", timeout=3)
+            except Exception:
+                print("[SYSTEM] 警告：無法連線至網際網路 (GitHub)！請檢查網路設定，否則無法自動下載必要核心組件。")
+                
             tools_dir = os.path.join(base_dir, "tools")
             if not os.path.exists(tools_dir):
                 os.makedirs(tools_dir)
