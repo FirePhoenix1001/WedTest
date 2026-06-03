@@ -108,6 +108,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Tool dependency checks and management
     function checkTools() {
+        checkToolsWithStatus(null);
+    }
+
+    function checkToolsWithStatus(statusData) {
         fetch(API_BASE + '/api/check-tools')
             .then(res => res.json())
             .then(data => {
@@ -115,18 +119,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     dependencyBanner.classList.add('hide');
                 } else {
                     // 偵測是否已經在背景下載部署中，若在下載中則不需要提醒
-                    fetch(API_BASE + '/api/status')
-                        .then(r => r.json())
-                        .then(statusData => {
-                            if (statusData.active && statusData.type === 'install') {
-                                dependencyBanner.classList.add('hide');
-                            } else {
-                                dependencyBanner.classList.remove('hide');
-                            }
-                        })
-                        .catch(() => {
-                            dependencyBanner.classList.remove('hide');
-                        });
+                    if (statusData && statusData.active && statusData.type === 'install') {
+                        dependencyBanner.classList.add('hide');
+                    } else {
+                        dependencyBanner.classList.remove('hide');
+                    }
                 }
             })
             .catch(err => console.error("Error checking tools:", err));
@@ -317,11 +314,21 @@ document.addEventListener('DOMContentLoaded', () => {
     function startStatusPoller() {
         if (taskCheckInterval) clearInterval(taskCheckInterval);
         
+        let toolCheckCounter = 0;
+        
         taskCheckInterval = setInterval(() => {
             fetch(API_BASE + '/api/status')
                 .then(res => res.json())
                 .then(data => {
                     setConnectionStatus(true);
+                    
+                    // 每隔 3 秒自動同步一次組件安裝狀態，若工具齊全或已在下載則收回異常提示
+                    toolCheckCounter++;
+                    if (toolCheckCounter >= 3) {
+                        toolCheckCounter = 0;
+                        checkToolsWithStatus(data);
+                    }
+
                     const buttons = [startDownloadBtn, startCutBtn, startTranscribeBtn];
                     
                     if (data.active) {
