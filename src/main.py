@@ -297,6 +297,22 @@ def delete_file():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
+def get_tool_path(filename):
+    base_dir = os.getcwd()
+    search_paths = [
+        base_dir,
+        os.path.join(base_dir, "tools"),
+        os.path.join(base_dir, "src"),
+        # Also fall back to the temp extracted folder where main.py actually is
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools")
+    ]
+    for d in search_paths:
+        path = os.path.join(d, filename)
+        if os.path.exists(path):
+            return path
+    return os.path.join(base_dir, "tools", filename)
+
 @app.route('/api/check-tools', methods=['GET'])
 def check_tools():
     base_dir = os.getcwd()
@@ -310,17 +326,21 @@ def check_tools():
     ]
     ffmpeg_exists = False
     ffprobe_exists = False
+    ytdlp_exists = False
     
     for d in search_paths:
         if os.path.exists(os.path.join(d, "ffmpeg.exe")):
             ffmpeg_exists = True
         if os.path.exists(os.path.join(d, "ffprobe.exe")):
             ffprobe_exists = True
+        if os.path.exists(os.path.join(d, "yt-dlp.exe")):
+            ytdlp_exists = True
             
     return jsonify({
         "ffmpeg": ffmpeg_exists,
         "ffprobe": ffprobe_exists,
-        "installed": ffmpeg_exists and ffprobe_exists
+        "ytdlp": ytdlp_exists,
+        "installed": ffmpeg_exists and ffprobe_exists and ytdlp_exists
     })
 
 @app.route('/api/install-tools', methods=['POST'])
@@ -333,7 +353,7 @@ def install_tools():
             running_task["active"] = True
             running_task["type"] = "install"
             running_task["progress"] = 0.0
-            print("\n--- 開始自動下載安裝 FFmpeg 與 FFprobe 組件 ---")
+            print("\n--- 開始自動下載安裝 FFmpeg、FFprobe 與 yt-dlp 組件 ---")
             
             base_dir = os.getcwd()
             tools_dir = os.path.join(base_dir, "tools")
@@ -342,37 +362,53 @@ def install_tools():
                 
             urls = {
                 "ffmpeg": "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffmpeg-6.1-win-64.zip",
-                "ffprobe": "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffprobe-6.1-win-64.zip"
+                "ffprobe": "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffprobe-6.1-win-64.zip",
+                "yt-dlp": "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe"
             }
             
             headers = {'User-Agent': 'Mozilla/5.0'}
             total_steps = len(urls)
             for idx, (name, url) in enumerate(urls.items()):
                 step_progress_start = idx / total_steps
-                progress_callback(step_progress_start + 0.1)
+                progress_callback(step_progress_start + 0.05)
                 
-                dest_exe = os.path.join(tools_dir, f"{name}.exe")
-                if os.path.exists(dest_exe):
-                    print(f"[SYSTEM] {name}.exe 已經存在，跳過。")
-                    continue
+                if name == "yt-dlp":
+                    dest_exe = os.path.join(tools_dir, "yt-dlp.exe")
+                    if os.path.exists(dest_exe):
+                        print("[SYSTEM] yt-dlp.exe 已經存在，跳過。")
+                        continue
+                    print("[SYSTEM] 正在從 GitHub 下載最新版 yt-dlp.exe...")
+                    req = urllib.request.Request(url, headers=headers)
+                    with urllib.request.urlopen(req) as response:
+                        with open(dest_exe, "wb") as f:
+                            f.write(response.read())
+                    print("[SYSTEM] yt-dlp.exe 安裝成功！")
+                else:
+                    dest_exe = os.path.join(tools_dir, f"{name}.exe")
+                    if os.path.exists(dest_exe):
+                        print(f"[SYSTEM] {name}.exe 已經存在，跳過。")
+                        continue
+                        
+                    print(f"[SYSTEM] 正在從 CDN 下載 {name} 組件包...")
+                    req = urllib.request.Request(url, headers=headers)
+                    with urllib.request.urlopen(req) as response:
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp_file:
+                            tmp_file.write(response.read())
+                            tmp_path = tmp_file.name
                     
-                print(f"[SYSTEM] 正在從 CDN 下載 {name} 組件包...")
-                req = urllib.request.Request(url, headers=headers)
-                with urllib.request.urlopen(req) as response:
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp_file:
-                        tmp_file.write(response.read())
-                        tmp_path = tmp_file.name
-                
-                progress_callback(step_progress_start + 0.4)
-                print(f"[SYSTEM] 正在解壓縮並安裝 {name}.exe 至 tools 目錄...")
-                with zipfile.ZipFile(tmp_path, 'r') as zip_ref:
-                    zip_ref.extract(f"{name}.exe", tools_dir)
-                    
-                os.remove(tmp_path)
-                print(f"[SYSTEM] {name}.exe 安裝成功！")
+                    progress_callback(step_progress_start + 0.2)
+                    print(f"[SYSTEM] 正在解壓縮並安裝 {name}.exe 至 tools 目錄...")
+                    with zipfile.ZipFile(tmp_path, 'r') as zip_ref:
+                        zip_ref.extract(f"{name}.exe", tools_dir)
+                        
+                    os.remove(tmp_path)
+                    print(f"[SYSTEM] {name}.exe 安裝成功！")
                 
             progress_callback(1.0)
             print("--- 所有必要組件已成功下載與安裝！請重新整理網頁。 ---")
+            
+            # 下載完後背景觸發一次更新以防萬一
+            threading.Thread(target=check_and_update_dependencies, daemon=True).start()
         except Exception as e:
             progress_callback(0.0)
             print(f"--- 下載安裝失敗: {str(e)} ---")
@@ -413,30 +449,30 @@ def clean_environment():
         return jsonify({"success": False, "message": f"啟動清理失敗: {str(e)}"}), 500
 
 def check_and_update_dependencies():
-    """在背景檢查並自動升級 yt-dlp 等依賴"""
-    if getattr(sys, 'frozen', False):
-        print("[SYSTEM] 偵測到為打包執行檔環境，跳過背景 pip 套件更新。")
+    """在背景執行 yt-dlp.exe 自我升級指令"""
+    ytdlp_path = get_tool_path('yt-dlp.exe')
+    if not os.path.exists(ytdlp_path):
         return
-
-    print("[SYSTEM] 正在背景檢查並更新 yt-dlp 核心下載組件，請稍候... 🌻")
+        
+    print("[SYSTEM] 正在背景檢查並自動更新 yt-dlp 執行核心...")
     try:
-        # 執行靜默升級指令
         res = subprocess.run(
-            [sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp"],
+            [ytdlp_path, "--update"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
             creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
         )
         if res.returncode == 0:
-            print("[SYSTEM] yt-dlp 核心下載組件已檢查並更新至最新版本！")
+            out_str = res.stdout.strip()
+            print(f"[SYSTEM] yt-dlp 更新完成: {out_str}")
         else:
-            print(f"[SYSTEM] 核心組件升級回傳錯誤碼: {res.returncode}. 訊息: {res.stderr.strip()}")
+            print(f"[SYSTEM] yt-dlp 更新回傳錯誤碼: {res.returncode}. 訊息: {res.stderr.strip()}")
     except Exception as e:
-        print(f"[SYSTEM] 核心下載組件背景自動更新失敗: {str(e)}")
+        print(f"[SYSTEM] yt-dlp 背景更新失敗: {str(e)}")
 
 def auto_install_tools_if_missing():
-    """在背景自動檢查並安裝 FFmpeg/FFprobe，若缺失則自動下載"""
+    """在背景自動檢查並安裝 FFmpeg/FFprobe/yt-dlp.exe，若缺失則自動下載"""
     base_dir = os.getcwd()
     search_paths = [
         base_dir,
@@ -448,15 +484,18 @@ def auto_install_tools_if_missing():
     ]
     ffmpeg_exists = False
     ffprobe_exists = False
+    ytdlp_exists = False
     
     for d in search_paths:
         if os.path.exists(os.path.join(d, "ffmpeg.exe")):
             ffmpeg_exists = True
         if os.path.exists(os.path.join(d, "ffprobe.exe")):
             ffprobe_exists = True
+        if os.path.exists(os.path.join(d, "yt-dlp.exe")):
+            ytdlp_exists = True
             
-    if not (ffmpeg_exists and ffprobe_exists):
-        print("[SYSTEM] 偵測到本機缺少必要核心組件 (FFmpeg/FFprobe)，啟動背景自動安裝程序...")
+    if not (ffmpeg_exists and ffprobe_exists and ytdlp_exists):
+        print("[SYSTEM] 偵測到本機缺少必要核心組件 (FFmpeg/FFprobe/yt-dlp)，啟動背景自動下載與部署程序...")
         try:
             tools_dir = os.path.join(base_dir, "tools")
             if not os.path.exists(tools_dir):
@@ -464,27 +503,42 @@ def auto_install_tools_if_missing():
                 
             urls = {
                 "ffmpeg": "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffmpeg-6.1-win-64.zip",
-                "ffprobe": "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffprobe-6.1-win-64.zip"
+                "ffprobe": "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffprobe-6.1-win-64.zip",
+                "yt-dlp": "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe"
             }
             
             headers = {'User-Agent': 'Mozilla/5.0'}
             for name, url in urls.items():
-                dest_exe = os.path.join(tools_dir, f"{name}.exe")
-                if os.path.exists(dest_exe):
-                    continue
-                
-                print(f"[SYSTEM] 正在背景下載 {name} 組件包...")
-                req = urllib.request.Request(url, headers=headers)
-                with urllib.request.urlopen(req) as response:
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp_file:
-                        tmp_file.write(response.read())
-                        tmp_path = tmp_file.name
-                        
-                with zipfile.ZipFile(tmp_path, 'r') as zip_ref:
-                    zip_ref.extract(f"{name}.exe", tools_dir)
-                os.remove(tmp_path)
-                print(f"[SYSTEM] 背景部署 {name}.exe 成功！")
-            print("[SYSTEM] 所有必要核心組件 (FFmpeg/FFprobe) 已自動背景下載安裝完成！")
+                if name == "yt-dlp":
+                    dest_exe = os.path.join(tools_dir, "yt-dlp.exe")
+                    if os.path.exists(dest_exe):
+                        continue
+                    print("[SYSTEM] 正在背景下載最新版 yt-dlp.exe 組件...")
+                    req = urllib.request.Request(url, headers=headers)
+                    with urllib.request.urlopen(req) as response:
+                        with open(dest_exe, "wb") as f:
+                            f.write(response.read())
+                    print("[SYSTEM] 背景部署 yt-dlp.exe 成功！")
+                else:
+                    dest_exe = os.path.join(tools_dir, f"{name}.exe")
+                    if os.path.exists(dest_exe):
+                        continue
+                    
+                    print(f"[SYSTEM] 正在背景下載 {name} 組件包...")
+                    req = urllib.request.Request(url, headers=headers)
+                    with urllib.request.urlopen(req) as response:
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp_file:
+                            tmp_file.write(response.read())
+                            tmp_path = tmp_file.name
+                            
+                    with zipfile.ZipFile(tmp_path, 'r') as zip_ref:
+                        zip_ref.extract(f"{name}.exe", tools_dir)
+                    os.remove(tmp_path)
+                    print(f"[SYSTEM] 背景部署 {name}.exe 成功！")
+            print("[SYSTEM] 所有必要核心組件已自動背景下載與部署完成！")
+            
+            # 下載完成後立即順便背景執行一次更新
+            threading.Thread(target=check_and_update_dependencies, daemon=True).start()
         except Exception as e:
             print(f"[SYSTEM] 背景自動安裝核心組件失敗: {str(e)}")
 
