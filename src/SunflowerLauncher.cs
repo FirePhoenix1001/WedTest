@@ -231,14 +231,14 @@ namespace SunflowerLauncher
         private static void SetupTrayIcon()
         {
             trayIcon = new NotifyIcon();
-            trayIcon.Text = "向日葵 Sunflower Launcher";
+            trayIcon.Text = "YoutubeGrabber";
             trayIcon.Icon = CreateSunflowerIcon();
 
             ContextMenu contextMenu = new ContextMenu();
-            contextMenu.MenuItems.Add("開啟向日葵網頁端", (s, e) => OpenWebStudio());
+            contextMenu.MenuItems.Add("開啟網頁端", (s, e) => OpenWebStudio());
             contextMenu.MenuItems.Add("顯示日誌控制台", (s, e) => ShowConsole());
             contextMenu.MenuItems.Add("-");
-            contextMenu.MenuItems.Add("結束並關閉伺服器", (s, e) => CleanExit());
+            contextMenu.MenuItems.Add("結束程式", (s, e) => CleanExit());
 
             trayIcon.ContextMenu = contextMenu;
             trayIcon.DoubleClick += (s, e) => OpenWebStudio();
@@ -275,7 +275,7 @@ namespace SunflowerLauncher
                     {
                         if (trayIcon != null && !hasShownReadyNotification)
                         {
-                            trayIcon.ShowBalloonTip(3000, "向日葵 Sunflower Launcher", "背景伺服器已就緒！🌻", ToolTipIcon.Info);
+                            trayIcon.ShowBalloonTip(3000, "YoutubeGrabber", "背景伺服器已就緒！🌻", ToolTipIcon.Info);
                             hasShownReadyNotification = true;
                         }
                         break;
@@ -479,7 +479,7 @@ namespace SunflowerLauncher
 
             // 4. 進度狀態與百分比 Label
             lblStatus = new Label();
-            lblStatus.Text = "背景伺服器運行中...";
+            lblStatus.Text = "伺服器運行中...";
             lblStatus.Font = new Font("Segoe UI", 9, FontStyle.Regular);
             lblStatus.ForeColor = Color.FromArgb(212, 212, 216);
             lblStatus.Location = new Point(20, 312);

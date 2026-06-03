@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    showToast("自動下載已啟動，請在下方查看進度日誌！", "success");
+                    showToast("自動下載已啟動", "success");
                 } else {
                     showToast(data.message, "error");
                     installToolsBtn.disabled = false;
@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     cleanEnvBtn.addEventListener('click', () => {
-        if (confirm("⚠️ 警告：確認要清空本機環境嗎？\n此操作將會刪除本機已下載的 FFmpeg、FFprobe 及 yt-dlp 等核心組件 (tools 資料夾)。")) {
+        if (confirm("⚠️ 警告：確認要清空本機下載的核心組件嗎？")) {
             fetch(API_BASE + '/api/clean-environment', { method: 'POST' })
                 .then(res => res.json())
                 .then(data => {
@@ -418,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                showToast("下載任務已順利送出，請查看日誌！", "success");
+                showToast("下載任務已送出", "success");
             } else {
                 showToast(data.message, "error");
                 startDownloadBtn.disabled = false;
@@ -450,7 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                showToast("剪輯任務已順利送出！", "success");
+                showToast("剪輯任務已送出", "success");
             } else {
                 showToast(data.message, "error");
                 startCutBtn.disabled = false;
@@ -482,7 +482,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                showToast("語音辨識任務已順利送出，這需要一些時間載入模型...", "success");
+                showToast("語音辨識任務已送出", "success");
             } else {
                 showToast(data.message, "error");
                 startTranscribeBtn.disabled = false;
@@ -599,7 +599,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cutTabBtn.classList.add('active');
         document.getElementById('tab-cut').classList.add('active');
         
-        showToast("已載入剪輯檔案路徑！", "success");
+        showToast("已載入檔案路徑", "success");
     };
 
     window.sendToTranscribe = function(path) {
@@ -613,7 +613,7 @@ document.addEventListener('DOMContentLoaded', () => {
         transcribeTabBtn.classList.add('active');
         document.getElementById('tab-transcribe').classList.add('active');
         
-        showToast("已載入語音辨識路徑！", "success");
+        showToast("已載入檔案路徑", "success");
     };
 
     window.deleteFileLocally = function(path, filename) {
@@ -626,7 +626,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    showToast("檔案已成功刪除！", "success");
+                    showToast("檔案已刪除", "success");
                     loadFiles();
                 } else {
                     showToast("刪除失敗：" + data.message, "error");
@@ -717,7 +717,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .then(data => {
                     if (data.success && data.path) {
                         input.value = data.path;
-                        showToast(`已成功選取本機檔案！`, "success");
+                        showToast("已選取本機檔案", "success");
                     }
                     btn.disabled = false;
                     btn.innerHTML = originalHTML;
@@ -773,7 +773,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             const matched = data.files.find(f => f.name === file.name);
                             if (matched) {
                                 inputEl.value = matched.path;
-                                showToast(`已自動對接載入檔案絕對路徑！🌻`, "success");
+                                showToast("已自動對接檔案路徑 🌻", "success");
                             } else {
                                 showToast(`無法取得「${file.name}」的絕對路徑。建議點擊「瀏覽檔案」選取，或直接放入程式資料夾中。`, "warning", 6000);
                                 inputEl.value = file.name;

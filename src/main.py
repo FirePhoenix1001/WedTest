@@ -469,7 +469,7 @@ def clean_environment():
         print("[SYSTEM] 已清空本機核心組件 (tools/ 資料夾已刪除)")
         return jsonify({
             "success": True, 
-            "message": "本機環境清理成功！已刪除本機下載的核心組件。"
+            "message": "本機核心組件已清空"
         })
     except Exception as e:
         return jsonify({"success": False, "message": f"清理失敗: {str(e)}"}), 500
